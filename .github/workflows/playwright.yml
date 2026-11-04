@@ -1,0 +1,56 @@
+name: Playwright Tests
+on:
+  schedule:
+    # Sydney alternates between UTC+10 and UTC+11; the gate below selects 09:00 local time.
+    - cron: '0 22 * * *'
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  schedule-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run-tests: ${{ steps.local-time.outputs.run-tests }}
+    steps:
+    - name: Check Sydney local time
+      id: local-time
+      run: |
+        if [[ "$GITHUB_EVENT_NAME" == "schedule" && "$(TZ=Australia/Sydney date +%H)" != "09" ]]; then
+          echo "run-tests=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "run-tests=true" >> "$GITHUB_OUTPUT"
+        fi
+  test:
+    needs: schedule-gate
+    if: needs.schedule-gate.outputs.run-tests == 'true'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Chromium
+      run: npx playwright install --with-deps chromium
+    - name: Run Playwright tests
+      run: npm test
+    - name: Generate Allure report
+      if: always()
+      run: npm run report:allure
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports
+        path: |
+          allure-report/
+          playwright-report/
+        retention-days: 30

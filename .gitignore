@@ -1,0 +1,26 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/allure-results/
+/allure-report/
+/allure-report.zip
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# Browser tooling and generated coverage
+/.playwright-mcp/
+/coverage/
+
+# Local OS files and package-manager logs
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
